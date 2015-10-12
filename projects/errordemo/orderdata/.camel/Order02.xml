@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Red Hat Stock Exchange and Trading Systems-->
+<stocktrading>
+	<name>Frank Feldman</name>
+	<custId>F475678678</custId>
+	<vip>4</vip>
+	<stockId>ABC</stockId>
+	<shares>20</shares>		
+</stocktrading>

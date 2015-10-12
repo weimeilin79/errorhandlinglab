@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<blueprint xmlns="http://www.osgi.org/xmlns/blueprint/v1.0.0"
+       xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+       xmlns:camel="http://camel.apache.org/schema/blueprint"
+       xsi:schemaLocation="
+       http://www.osgi.org/xmlns/blueprint/v1.0.0 http://www.osgi.org/xmlns/blueprint/v1.0.0/blueprint.xsd
+       http://camel.apache.org/schema/blueprint http://camel.apache.org/schema/blueprint/camel-blueprint.xsd">
+
+ 
+ <bean id="randomProcessor" class="org.blogdemo.errordemo.RandomProcessor"/>
+
+  <camelContext errorHandlerRef="myErrorHandler" trace="false" id="blueprintContext" xmlns="http://camel.apache.org/schema/blueprint">
+    <errorHandler deadLetterUri="file://DLQ" type="DeadLetterChannel" id="myErrorHandler">
+        <redeliveryPolicy retryAttemptedLogLevel="DEBUG" redeliveryDelay="5000" maximumRedeliveries="1"/>
+    </errorHandler>
+    <onException>
+        <exception>java.io.FileNotFoundException</exception>
+        <redeliveryPolicy retryAttemptedLogLevel="INFO" redeliveryDelay="3000" maximumRedeliveries="2"/>
+    </onException>
+    <route>
+        <from uri="file://orderdata"/>
+        <doTry>
+            <to uri="validator:file:schema/singletrade.xsd"/>
+            <to uri="direct://randomProcess"/>
+            <doCatch>
+                <exception>org.apache.camel.processor.validation.SchemaValidationException</exception>
+                <log message="We have a problem!! ${exception.message}"/>
+                <to uri="file://garbage"/>
+            </doCatch>
+            <doFinally>
+                <log message="Validation Done!"/>
+            </doFinally>
+        </doTry>
+    </route>
+    <route errorHandlerRef="myErrorHandler">
+        <from uri="direct://randomProcess"/>
+        <log message="Processed file ${header.CamelFileName}"/>
+        <bean ref="randomProcessor"/>
+        <to uri="file://data"/>
+    </route>
+</camelContext>
+
+</blueprint>
